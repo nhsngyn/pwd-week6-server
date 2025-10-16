@@ -1,3 +1,5 @@
+// auth.middleware.js
+
 // 로그인한 상태인지 확인하는 미들웨어
 exports.isLoggedIn = (req, res, next) => {
   if (req.isAuthenticated()) { // Passport가 제공하는 메서드, 로그인 되어 있으면 true

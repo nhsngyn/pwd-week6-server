@@ -1,4 +1,3 @@
-// src/routes/users.routes.js
 const express = require('express');
 const router = express.Router();
 const usersController = require('../controllers/users.controller');
@@ -23,6 +22,5 @@ router.get('/all', isLoggedIn, isAdmin, usersController.getAllUsers);
 
 // PUT /api/users/:userId/type (사용자 권한 변경 - 관리자)
 router.put('/:userId/type', isLoggedIn, isAdmin, usersController.changeUserType);
-
 
 module.exports = router;

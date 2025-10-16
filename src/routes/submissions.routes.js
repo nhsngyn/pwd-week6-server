@@ -1,13 +1,16 @@
-// src/routes/submissions.routes.js
 const express = require('express');
-const controller = require('../controllers/submissions.controller');
-
 const router = express.Router();
+const submissionsController = require('../controllers/submissions.controller');
+const { isLoggedIn, isAdmin } = require('../middleware/auth.middleware');
 
-router.get('/', controller.list);
-router.get('/:id', controller.get);
-router.post('/', controller.create);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+// POST /api/submissions (새로운 제보 생성)
+router.post('/', submissionsController.createSubmission);
+
+// --- 관리자 전용 ---
+// GET /api/submissions (모든 제보 조회)
+router.get('/', isLoggedIn, isAdmin, submissionsController.getSubmissions);
+
+// PUT /api/submissions/:id (제보 상태 변경)
+router.put('/:id', isLoggedIn, isAdmin, submissionsController.updateSubmissionStatus);
 
 module.exports = router;
