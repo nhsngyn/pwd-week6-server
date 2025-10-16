@@ -1,43 +1,133 @@
 // src/services/restaurants.service.js
+const path = require('path');
+const { readFileSync } = require('fs');
 const Restaurant = require('../models/restaurant.model');
 
+const DATA_PATH = path.join(__dirname, '..', 'data', 'restaurants.json');
+
+// src/services/restaurants.service.js
+const { ensureSeededOnce } = require('./src/services/restaurants.service');
+
+// server.js에서 서버 시작 시 자동 실행
+async function start() {
+  try {
+    await connectDB(process.env.MONGODB_URI, process.env.DB_NAME);
+    await ensureSeededOnce(); // 초기 데이터 자동 주입
+    if (require.main === module) {
+      app.listen(PORT, () => {
+        console.log(`Server listening on port ${PORT}`);
+      });
+    }
+  }
+}
+
+
+function readSeedDataSync() {
+  const raw = readFileSync(DATA_PATH, 'utf8');
+  return JSON.parse(raw);
+}
+
+async function getNextRestaurantId() {
+  const max = await Restaurant.findOne().sort('-id').select('id').lean();
+  return (max?.id || 0) + 1;
+}
+
+function getAllRestaurantsSync() {
+  // 동기 데모 전용: 파일에서 즉시 반환
+  const data = readSeedDataSync();
+  return JSON.parse(JSON.stringify(data));
+}
+
 async function getAllRestaurants() {
-  const docs = await Restaurant.find({});
-  return docs.map((doc) => doc.toObject());
+  const docs = await Restaurant.find({}).lean();
+  return docs;
 }
 
 async function getRestaurantById(id) {
-  const doc = await Restaurant.findById(id);
-  return doc ? doc.toObject() : null;
-}
-
-async function createRestaurant(payload) {
-  const doc = await Restaurant.create(payload);
-  return doc.toObject();
-}
-
-async function updateRestaurant(id, payload) {
-  const updated = await Restaurant.findByIdAndUpdate(id, payload, { new: true });
-  return updated ? updated.toObject() : null;
-}
-
-async function deleteRestaurant(id) {
-  const deleted = await Restaurant.findByIdAndDelete(id);
-  return deleted ? deleted.toObject() : null;
+  const numericId = Number(id);
+  const doc = await Restaurant.findOne({ id: numericId }).lean();
+  return doc || null;
 }
 
 async function getPopularRestaurants(limit = 5) {
-  const docs = await Restaurant.find({}).sort({ rating: -1 }).limit(limit);
-  return docs.map((doc) => doc.toObject());
+  const docs = await Restaurant.find({}).sort({ rating: -1 }).limit(limit).lean();
+  return docs;
 }
 
-// module.exports 부분은 기존 코드와 동일하게 유지
+async function createRestaurant(payload) {
+  const requiredFields = ['name', 'category', 'location'];
+  const missingField = requiredFields.find((field) => !payload[field]);
+  if (missingField) {
+    const error = new Error(`'${missingField}' is required`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const nextId = await getNextRestaurantId();
+  const doc = await Restaurant.create({
+    id: nextId,
+    name: payload.name,
+    category: payload.category,
+    location: payload.location,
+    priceRange: payload.priceRange ?? '정보 없음',
+    rating: payload.rating ?? 0,
+    description: payload.description ?? '',
+    recommendedMenu: Array.isArray(payload.recommendedMenu) ? payload.recommendedMenu : [],
+    likes: 0,
+    image: payload.image ?? ''
+  });
+  return doc.toObject();
+}
+
+async function resetStore() {
+  const seed = readSeedDataSync();
+  await Restaurant.deleteMany({});
+  await Restaurant.insertMany(seed);
+}
+
+async function ensureSeededOnce() {
+  const count = await Restaurant.estimatedDocumentCount();
+  if (count > 0) return { seeded: false, count };
+  const seed = readSeedDataSync();
+  await Restaurant.insertMany(seed);
+  return { seeded: true, count: seed.length };
+}
+
+async function updateRestaurant(id, payload) {
+  const numericId = Number(id);
+  const updated = await Restaurant.findOneAndUpdate(
+    { id: numericId },
+    {
+      $set: {
+        name: payload.name,
+        category: payload.category,
+        location: payload.location,
+        priceRange: payload.priceRange,
+        rating: payload.rating,
+        description: payload.description,
+        recommendedMenu: Array.isArray(payload.recommendedMenu) ? payload.recommendedMenu : undefined,
+        image: payload.image,
+      }
+    },
+    { new: true, runValidators: true, lean: true }
+  );
+  return updated;
+}
+
+async function deleteRestaurant(id) {
+  const numericId = Number(id);
+  const deleted = await Restaurant.findOneAndDelete({ id: numericId }).lean();
+  return deleted;
+}
+
 module.exports = {
   getAllRestaurants,
+  getAllRestaurantsSync,
   getRestaurantById,
+  getPopularRestaurants,
   createRestaurant,
   updateRestaurant,
   deleteRestaurant,
-  getPopularRestaurants,
-  // ... 등등 다른 export가 있다면 유지
+  resetStore,
+  ensureSeededOnce,
 };

@@ -6,11 +6,11 @@ async function connectDB(uri, dbName) {
     throw new Error('MONGODB_URI is missing. Set it in environment variables.');
   }
   await mongoose.connect(uri, {
-    dbName,
+    dbName: effectiveDbName,
     autoIndex: process.env.NODE_ENV !== 'production',
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 10000,
-    family: 4,
+    maxPoolSize: 10,                    // 연결 풀 최대 크기
+    serverSelectionTimeoutMS: 10000,    // 서버 선택 타임아웃
+    family: 4,                          // IPv4 우선 사용
   });
   mongoose.connection.on('connected', () => {
     console.log(`[MongoDB] connected: ${mongoose.connection.name}`);
