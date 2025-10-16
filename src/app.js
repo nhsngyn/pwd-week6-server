@@ -1,3 +1,11 @@
+const express = require('express');
+const session = require('express-session');
+const cors = require('cors');
+const passport = require('passport');
+const mongoose = require('mongoose');
+const MongoStore = require('connect-mongo');
+const { getCorsConfig } = require('../cors-config');
+
 function createApp() {
   const app = express();
   
