@@ -5,23 +5,6 @@ const Restaurant = require('../models/restaurant.model');
 
 const DATA_PATH = path.join(__dirname, '..', 'data', 'restaurants.json');
 
-// src/services/restaurants.service.js
-const { ensureSeededOnce } = require('./src/services/restaurants.service');
-
-// server.js에서 서버 시작 시 자동 실행
-async function start() {
-  try {
-    await connectDB(process.env.MONGODB_URI, process.env.DB_NAME);
-    await ensureSeededOnce(); // 초기 데이터 자동 주입
-    if (require.main === module) {
-      app.listen(PORT, () => {
-        console.log(`Server listening on port ${PORT}`);
-      });
-    }
-  }
-}
-
-
 function readSeedDataSync() {
   const raw = readFileSync(DATA_PATH, 'utf8');
   return JSON.parse(raw);
