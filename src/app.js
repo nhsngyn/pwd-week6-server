@@ -61,3 +61,5 @@ app.use('/api/users', userRoutes);
 
   return app;
 }
+
+module.exports = createApp;
