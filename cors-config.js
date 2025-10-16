@@ -30,3 +30,5 @@ const getCorsConfig = () => {
     credentials: true,
   };
 };
+
+module.exports = { getCorsConfig };
