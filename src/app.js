@@ -13,7 +13,10 @@ function createApp() {
 
   // 프록시 환경 대응 (Render, Vercel 등)
   app.set('trust proxy', 1);
-
+app.use(cors({
+  origin: 'https://pwd-week6-client-delta.vercel.app/', // 👈 클라이언트의 주소를 정확히 적어주세요.
+  credentials: true, // 👈 이 옵션을 반드시 추가해야 합니다.
+}));
   // 미들웨어 설정
   app.use(cors(getCorsConfig()));
   app.use(express.json());
