@@ -1,3 +1,5 @@
+// src/services/auth.service.js
+
 const User = require('../models/user.model');
 
 /**
@@ -24,8 +26,21 @@ async function registerUser(userData) {
     provider: 'local',
   });
 
-  await newUser.save();
-  return newUser;
+  try {
+    // 👇 [로그 1] 저장 시도 로그
+    console.log(`[DEBUG] Saving new user to DB: ${newUser.email}`);
+    
+    const savedUser = await newUser.save();
+
+    // 👇 [로그 2] 저장 성공 로그
+    console.log(`[DEBUG] User successfully saved with ID: ${savedUser._id}`);
+    
+    return savedUser;
+  } catch (error) {
+    // 👇 [로그 3] 저장 실패 에러 로그
+    console.error('[DEBUG] Error while saving user:', error);
+    throw error;
+  }
 }
 
 /**
