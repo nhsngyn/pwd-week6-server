@@ -1,36 +1,34 @@
+// tests/restaurants.routes.test.js
 const request = require('supertest');
 const mongoose = require('mongoose');
-const session = require('supertest-session'); // <<< 픽스 3-1: 세션 관리를 위해 추가
+const session = require('supertest-session'); // 👈 [1] 세션 라이브러리 가져오기
 const Restaurant = require('../src/models/restaurant.model');
-const User = require('../src/models/user.model'); // <<< 픽스 3-2: User 모델 추가
+const User = require('../src/models/user.model'); // 👈 [2] User 모델 가져오기
 const createApp = require('../src/app');
-const bcrypt = require('bcrypt');
 
 describe('Restaurant routes', () => {
   let app;
   let server;
-  let testSession; // <<< 픽스 3-3: 로그인된 세션을 저장할 변수
+  let testSession; // 👈 [3] 로그인된 세션을 담을 변수
 
   beforeAll(async () => {
-    // 테스트용 DB를 명시적으로 사용하는 것이 안전합니다.
     await mongoose.connect(process.env.MONGODB_URI, { dbName: 'test-db' });
     app = createApp();
-    server = app.listen(4004);
+    server = app.listen(4004); // 테스트용 전용 포트 사용
   });
-  
-  // <<< 픽스 3-4: 각 테스트 전에 관리자로 로그인하는 로직 추가
+
+  // 👇 [4] 각 테스트가 시작되기 전에, 관리자 유저를 만들고 로그인합니다.
   beforeEach(async () => {
-    // 테스트용 관리자 생성
-    const hashedPassword = await bcrypt.hash('testpassword', 10);
+    // 임시 관리자 유저 생성
     await User.create({
       email: 'admin@test.com',
-      password: hashedPassword,
+      password: 'testpassword', // 모델에서 자동으로 암호화됩니다.
       name: 'Test Admin',
       userType: 'admin',
       provider: 'local',
     });
 
-    // supertest-session을 사용해 로그인 세션 생성
+    // 세션을 만들고 관리자 유저로 로그인합니다.
     testSession = session(app);
     await testSession.post('/api/auth/login').send({
       email: 'admin@test.com',
@@ -38,6 +36,7 @@ describe('Restaurant routes', () => {
     });
   });
 
+  // 각 테스트가 끝난 후, 데이터베이스를 깨끗하게 비웁니다.
   afterEach(async () => {
     await Restaurant.deleteMany({});
     await User.deleteMany({}); // User 컬렉션도 비워줍니다.
@@ -53,35 +52,30 @@ describe('Restaurant routes', () => {
       name: '새로운 식당',
       category: '카페',
       location: '캠퍼스 타운',
-      rating: 5,
+      // 'id'는 서비스에서 생성하므로 보내지 않습니다.
     };
 
-    // <<< 픽스 3-5: request(app) 대신 로그인된 testSession으로 요청
+    // 👇 [5] 로그인된 'testSession'을 사용해 요청을 보냅니다.
     const response = await testSession
       .post('/api/restaurants')
       .send(payload)
       .set('Content-Type', 'application/json');
 
-    // 이제 401이 아닌 201이 나와야 합니다.
+    // 이제 관리자로 로그인했으므로 상태 코드는 201이 되어야 합니다.
     expect(response.status).toBe(201);
-    // 서비스 로직에 따라 응답 형식이 다를 수 있으므로, body 전체 또는 주요 값만 확인합니다.
     expect(response.body.restaurant.name).toBe(payload.name);
   });
 
   test('GET /api/restaurants/:id returns an item', async () => {
     const newRestaurant = await Restaurant.create({
-      id: 2, // <<< 픽스 1: 필수 필드인 'id'를 추가합니다.
+      id: 1, // 테스트 데이터에 필요한 'id' 필드 추가
       name: 'ID 조회용 식당',
       category: '일식',
       location: '테스트 위치',
-      rating: 4,
     });
-    
-    // 서비스 로직은 숫자 id를 사용하므로, id로 조회합니다.
-    const restaurantId = newRestaurant.id;
 
-    // request(app)는 비로그인 상태이지만 GET은 로그인 없이 가능해야 합니다.
-    const response = await request(app).get(`/api/restaurants/${restaurantId}`);
+    // GET 요청은 로그인이 필요 없으므로 일반 'request'를 사용합니다.
+    const response = await request(app).get(`/api/restaurants/${newRestaurant.id}`);
 
     expect(response.status).toBe(200);
     expect(response.body.restaurant.name).toBe('ID 조회용 식당');
