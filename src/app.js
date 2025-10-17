@@ -2,12 +2,14 @@ const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 const passport = require('passport');
+const passportConfig = require('./config/passport.config');
 const mongoose = require('mongoose');
 const MongoStore = require('connect-mongo');
 const { getCorsConfig } = require('../cors-config');
 
 function createApp() {
   const app = express();
+  passportConfig();
   
   // 프록시 환경 대응 (Render, Vercel)
   app.set('trust proxy', 1);
