@@ -6,9 +6,8 @@ async function connectDB(uri, dbName) {
     throw new Error('MONGODB_URI가 환경 변수에 설정되지 않았습니다.');
   }
 
-  // 👇 이 한 줄을 추가하여 변수를 선언합니다.
   const effectiveDbName = dbName || process.env.DB_NAME;
-
+console.log(`[DEBUG] Attempting to connect to URI: "${uri}" with DB_NAME: "${effectiveDbName}"`);
   try {
     await mongoose.connect(uri, {
       dbName: effectiveDbName, // 선언된 변수를 여기서 사용

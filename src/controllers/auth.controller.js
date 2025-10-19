@@ -1,4 +1,7 @@
+// src/controllers/auth.controller.js
+
 const passport = require('passport');
+const authService = require('../services/auth.service');
 const User = require('../models/user.model'); // User 모델 경로
 
 // 회원가입
@@ -6,9 +9,7 @@ exports.register = async (req, res, next) => {
   try {
     const { email, password, name } = req.body;
 
-    // TODO: 실제 회원가입 로직 구현 (user.service.js를 통해)
-    // 예: const user = await authService.registerUser({ email, password, name });
-
+   const savedUser = await authService.registerUser({ email, password, name });
     const newUser = {
       email,
       name,

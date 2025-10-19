@@ -9,12 +9,15 @@ const { getCorsConfig } = require('../cors-config');
 
 function createApp() {
   const app = express();
-  passportConfig();
-  
-  // 프록시 환경 대응 (Render, Vercel)
-  app.set('trust proxy', 1);
+  passportConfig(); // Passport 설정 초기화
 
-  // CORS 설정 - 환경별 자동 설정
+  // 프록시 환경 대응 (Render, Vercel 등)
+  app.set('trust proxy', 1);
+app.use(cors({
+  origin: 'https://pwd-week6-client-delta.vercel.app/', // 👈 클라이언트의 주소를 정확히 적어주세요.
+  credentials: true, // 👈 이 옵션을 반드시 추가해야 합니다.
+}));
+  // 미들웨어 설정
   app.use(cors(getCorsConfig()));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -37,11 +40,11 @@ function createApp() {
     sessionConfig.proxy = true;
   }
 
-  // MongoDB 연결 상태에 따른 세션 저장소 설정
+  // MongoDB 세션 저장소 설정
   if (mongoose.connection.readyState === 1) {
     sessionConfig.store = MongoStore.create({
       client: mongoose.connection.getClient(),
-      touchAfter: 24 * 3600 // 24시간 동안 세션 업데이트 방지
+      touchAfter: 24 * 3600 // 24시간
     });
   } else if (process.env.MONGODB_URI) {
     sessionConfig.store = MongoStore.create({
@@ -52,22 +55,32 @@ function createApp() {
   }
 
   app.use(session(sessionConfig));
-  
+
   // Passport 초기화
   app.use(passport.initialize());
   app.use(passport.session());
-  
-// 1. 각 API 라우트 파일을 모두 불러옵니다.
-const authRoutes = require('./routes/auth.routes');
-const restaurantRoutes = require('./routes/restaurants.routes');
-const submissionRoutes = require('./routes/submissions.routes');
-const userRoutes = require('./routes/users.routes');
 
-// 2. '/api'로 시작하는 경로에 각 라우터를 직접 연결합니다.
-app.use('/api/auth', authRoutes);
-app.use('/api/restaurants', restaurantRoutes);
-app.use('/api/submissions', submissionRoutes);
-app.use('/api/users', userRoutes);
+  // --- 라우트 설정 ---
+
+  // 1. 라우트 파일들을 불러옵니다.
+  const authRoutes = require('./routes/auth.routes');
+  const restaurantRoutes = require('./routes/restaurants.routes');
+  const submissionRoutes = require('./routes/submissions.routes');
+  const userRoutes = require('./routes/users.routes');
+
+  // 2. 서버 상태 확인(Health Check) API를 등록합니다.
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      message: 'Server is running healthily',
+    });
+  });
+
+  // 3. '/api' 경로에 각 라우터를 직접 연결합니다.
+  app.use('/api/auth', authRoutes);
+  app.use('/api/restaurants', restaurantRoutes);
+  app.use('/api/submissions', submissionRoutes);
+  app.use('/api/users', userRoutes);
 
   return app;
 }
