@@ -14,8 +14,8 @@ const getCorsConfig = () => {
     if (process.env.VERCEL_URL) {
       allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
     }
-    if (process.env.PRODUCTION_CLIENT_URL) {
-      allowedOrigins.push(process.env.PRODUCTION_CLIENT_URL);
+    if (process.env.CLIENT_URL) {
+      allowedOrigins.push(process.env.CLIENT_URL);
     }
   }
   
