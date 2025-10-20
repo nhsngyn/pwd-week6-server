@@ -19,16 +19,24 @@ const getCorsConfig = () => {
     }
   }
   
-  return {
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-  };
-};
+if (process.env.CLIENT_URL) {
+      const clientUrl = process.env.CLIENT_URL.replace(/\/$/, ''); // /를 제거
+ allowedOrigins.push(clientUrl); }
+}
+ 
+ return {
+origin: (origin, callback) => {
+if (!origin || allowedOrigins.includes(origin)) {
+callback(null, true);
+} else {
+        // [디버깅용] 어떤 주소가 거부되었는지 로그를 남깁니다.
+        console.error('CORS 거부됨:');
+        console.error('Request Origin:', origin);
+        console.error('Allowed Origins:', allowedOrigins);
+callback(new Error('Not allowed by CORS'));
+}
+},
+credentials: true,
+ };
 
 module.exports = { getCorsConfig };
