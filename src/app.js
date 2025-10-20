@@ -1,3 +1,5 @@
+// app.js (수정 완료)
+
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
@@ -13,12 +15,12 @@ function createApp() {
 
   // 프록시 환경 대응 (Render, Vercel 등)
   app.set('trust proxy', 1);
-app.use(cors({
-  origin: 'https://pwd-week6-client-delta.vercel.app/', // 👈 클라이언트의 주소를 정확히 적어주세요.
-  credentials: true, // 👈 이 옵션을 반드시 추가해야 합니다.
-}));
-  // 미들웨어 설정
+
+  // 👇 [수정됨] 잘못된 하드코딩 CORS 설정을 삭제하고,
+  //            cors-config.js를 사용하는 올바른 설정만 남깁니다.
   app.use(cors(getCorsConfig()));
+  
+  // 미들웨어 설정
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
